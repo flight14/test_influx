@@ -6,6 +6,8 @@ const http = require('http')
 const os = require('os')
 const path = require('path');
 const bodyParser = require('body-parser');
+const request = require('request');
+
 
 const app = express();
 
@@ -102,6 +104,7 @@ const ALARM_LEVEL = 1;   // 什么等级开始报警, 默认1
 const BLOCK_FILE = './blocks.json';
 // const WX_MSG_URL = 'http://localhost:3100/blockme';
 const WX_MSG_URL = 'http://2whzur.natappfree.cc/blockme';
+const KPI_SERVICE = 'http://localhost:3119/kpi/alarm';
 
 /**
  * 获取库名
@@ -485,7 +488,7 @@ function formatDuration(minutes) {
 }
 
 /**
- * 发送报警 
+ * 发送报警 (本地发送)
  */
 function sendAlarm(sensor, check, users, blocks) {
   let firstline = makeFirstline(sensor, check);
@@ -669,6 +672,18 @@ function cleanBlocks() {
   return count;
 }
 
+/**
+ * 发送 POST 请求 
+ */
+function postRequest(url, json, callback) {
+  var options = {
+    uri: url,
+    method: 'POST',
+    json: json,
+  };
+  request(options, callback);
+}
+
 // -- routers ------------------------------------------------------
 app.get('/', function (req, res) {
   setTimeout(() => res.end('Hello sensor!'), Math.random() * 500);
@@ -813,4 +828,25 @@ app.get('/test8hr', function (req, res) {
     if (error) throw error;
     res.send('The count is: '+ results[0].cnt);
   });
+});
+
+app.get('/test-request', function (req1, res1) {
+  let json = {
+    "token":"20185523",
+    "mobile":"13011112222,13072168298",
+    "firstline":"POSTMAN设备 温度超标！数值:15 标准:0~10",
+    "level_name":"报警",
+    "level_color":"#F83A22",
+    "curtime":"2018-5-16 13:15",
+    "location":"上海一号库",
+    "contact":"测 138****2345",
+    "workorder":"311429",
+    "lastline":"已持续5小时, 请紧急处理！"
+  };
+  
+  postRequest(KPI_SERVICE, json, function(err, resp, body) {
+    console.log('request:', err, resp.statusCode, body);
+  });
+  
+  res1.send('done!');
 });
