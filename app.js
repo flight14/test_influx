@@ -95,7 +95,6 @@ var timer = 0;
 var out_value = 0;
 var out_date = 0;
 var tm_off_count = {};
-var alarm_que = [];
 
 const INTV_MIN = 5;      // 查询间隔 min 
 const MIN_SECS = 2;      // 测试时可调到 2 默认 60
@@ -558,7 +557,8 @@ function sendAlarm(sensor, check, users, blocks) {
     };
     wechatApi.sendTemplate(user.openid, templateId, url, data, function(err, result) {
       //console.log('sendTemplate err+result:', err, result)
-    }) */
+    }) 
+    */
   });
   
   let mobiles = to_mobiles.join(',');
@@ -576,7 +576,8 @@ function sendAlarm(sensor, check, users, blocks) {
   };
   
   postRequest(KPI_SERVICE, json, function(err, resp, body) {
-    console.log('Remote resp:', err, resp.statusCode, body);
+    if(err)  console.log('Remote:', err);
+    else     console.log('Remote:', resp.statusCode, body);
   });
 }
 
@@ -869,7 +870,8 @@ app.get('/test-request', function (req1, res1) {
   };
   
   postRequest(KPI_SERVICE, json, function(err, resp, body) {
-    console.log('request:', err, resp.statusCode, body);
+    if(err)  console.log('Remote:', err);
+    else     console.log('Remote:', resp.statusCode, body);
   });
   
   res1.send('done!');
