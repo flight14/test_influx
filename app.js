@@ -95,6 +95,7 @@ var timer = 0;
 var out_value = 0;
 var out_date = 0;
 var tm_off_count = {};
+var alarm_que = [];
 
 const INTV_MIN = 5;      // 查询间隔 min 
 const MIN_SECS = 2;      // 测试时可调到 2 默认 60
@@ -488,18 +489,20 @@ function formatDuration(minutes) {
 }
 
 /**
- * 发送报警 (本地发送)
+ * 发送报警
  */
 function sendAlarm(sensor, check, users, blocks) {
   let firstline = makeFirstline(sensor, check);
   let curtime = new Date().formatTime('yyyy-MM-dd hh:mm');
   let level = check.level;
-  let levelName = level==0? '通知': (level==1? '预警': '报警');
-  let color = level==0? '#16A765': (level==1? '#FFAD46': '#F83A22');
+  let level_name = level==0? '通知': (level==1? '预警': '报警');
+  let level_color = level==0? '#16A765': (level==1? '#FFAD46': '#F83A22');
   let durat_str = formatDuration(check.duration);
   let lastline = (check.duration? '已持续约 '+ durat_str: '')+ (check.duration&&level? ', ': '') +(level? '请及时处理！':'');
   
   console.error('SendAlarm', curtime, sensor.name, check);
+  
+  let to_mobiles = [];
   
   users.forEach( function(user) {
     if(!user.openid)  return;
@@ -517,7 +520,10 @@ function sendAlarm(sensor, check, users, blocks) {
       return;
     }
     
-    // 发送微信消息
+    to_mobiles.push(user.mobile);
+    
+    // 发送微信消息(本地)
+    /*
     var templateId = 'zOVAEaSZVEHPdRE1KM2uQJy5wPfuWibHSU6NmXpIqF8';
     var url = WX_MSG_URL+ `?sid=${sid}&uid=${uid}`;
     var data = {
@@ -526,8 +532,8 @@ function sendAlarm(sensor, check, users, blocks) {
        "color":"#173177"
        },
        "keyword1":{
-       "value": levelName,
-       "color": color
+       "value": level_name,
+       "color": level_color
        },
        "keyword2": {
        "value": curtime,
@@ -552,7 +558,25 @@ function sendAlarm(sensor, check, users, blocks) {
     };
     wechatApi.sendTemplate(user.openid, templateId, url, data, function(err, result) {
       //console.log('sendTemplate err+result:', err, result)
-    })
+    }) */
+  });
+  
+  let mobiles = to_mobiles.join(',');
+  let json = {
+    "token":"20185523",
+    "mobile": mobiles,
+    "firstline": firstline,
+    "level_name": level_name,
+    "level_color": level_color,
+    "curtime": curtime,
+    "location": sensor.loc,
+    "contact": "何 138****2345",
+    "workorder": "n/a",
+    "lastline": lastline
+  };
+  
+  postRequest(KPI_SERVICE, json, function(err, resp, body) {
+    console.log('Remote resp:', err, resp.statusCode, body);
   });
 }
 
